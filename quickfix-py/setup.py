@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 import glob
+import subprocess
 import sys
 from distutils.command.build_ext import build_ext
 from distutils.core import Extension, setup
-import subprocess
 
 
 class build_ext_subclass(build_ext):
@@ -62,14 +62,14 @@ extra_compile_args = [
 ldflags = subprocess.getoutput("pkg-config --libs openssl").strip().split()
 extra_link_args = ldflags
 
-if sys.platform == 'linux': # TODO: execute command  to get openssl 
+if sys.platform == "linux":  # TODO: execute command  to get openssl
     extra_compile_args.append("-I/usr/include/openssl")
 else:
     extra_compile_args.append("-I/opt/homebrew/opt/openssl@3/include")
 
 setup(
     name="quickfix-py",
-    version="0.0.1",
+    version="0.0.2",
     python_requires=">=3.11",
     py_modules=[
         "quickfix",

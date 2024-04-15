@@ -85,6 +85,8 @@ If you are going to test how the package looks like, use TestPyPi https://test.p
 python3 -m twine upload --repository testpypi dist/*
 ```
 
+Remove the option --repository testpypi to use the production repository.
+
 4. Publish to PyPi (Github actions)
 
-
+Before executing the action pypa/gh-action-pypi-publish, you need to register the Github Repository as a _trusted publisher_. see [Adding a trusted publisher to an existing PyPI project](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
