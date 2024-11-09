@@ -8,11 +8,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python_build: [cp311-manylinux_aarch64, cp312-manylinux_aarch64]
-        os: [ubuntu-latest]
+        os:
+        - ubuntu-latest
+        - macos-14
+        - windows-latest
     env:
-      CIBW_ARCHS: aarch64
-      CIBW_BUILD: ${{ matrix.python_build }}
+      CIBW_ARCHS_LINUX: aarch64
+      CIBW_ARCHS_MACOS: auto
+      CIBW_ARCHS_WINDOWS: auto
+      CIBW_BUILD: "cp311-* cp312-* cp313-*"
 
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +29,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '${{ matrix.python_build == "cp311-manylinux_aarch64" && "3.11" || "3.12" }}'
+          python-version: '3.12'
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
@@ -33,66 +37,11 @@ jobs:
           package-dir: quickfix-py
         env:
           CIBW_BEFORE_ALL_LINUX: 'uname -a && ls -la && ./setup-linux-yum.sh'
-          CIBW_BUILD: ${{ matrix.python_build }}
+          CIBW_BUILD: "cp311-* cp312-* cp313-*"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.python_build }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl
-
-  build-wheels-osx:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python_build: [cp311-macosx_arm64, cp312-macosx_arm64]
-        os: [macos-14]
-    env:
-      CIBW_ARCHS: 'auto'
-      CIBW_BUILD: ${{ matrix.python_build }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '${{ matrix.python_build == "cp311-macosx_arm64" && "3.11" || "3.12" }}'
-
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
-        with:
-          package-dir: quickfix-py
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cibw-wheels-${{ matrix.python_build }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl
-
-  build-wheels-windows:
-    name: Build wheels on Windows
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        python_build: [cp311-win_amd64, cp312-win_amd64]
-    env:
-      CIBW_ARCHS: 'auto'
-      CIBW_BUILD: ${{ matrix.python_build }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '${{ matrix.python_build == "cp311-win_amd64" && "3.11" || "3.12" }}'
-
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
-        with:
-          package-dir: quickfix-py
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cibw-wheels-${{ matrix.python_build }}-${{ strategy.job-index }}
+          name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
 
   make_sdist:
