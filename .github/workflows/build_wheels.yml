@@ -35,8 +35,7 @@ jobs:
         with:
           package-dir: quickfix-py
         env:
-          CIBW_BEFORE_ALL_LINUX: 'uname -a && ls -la && ./setup-linux-yum.sh'
-          CIBW_BUILD: "cp311-* cp312-* cp313-*"
+          CIBW_BEFORE_ALL_LINUX: 'uname -a && ls -la && ./setup-linux-apt.sh'
 
       - uses: actions/upload-artifact@v4
         with:
