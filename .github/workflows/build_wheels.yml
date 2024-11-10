@@ -15,7 +15,7 @@ jobs:
       CIBW_ARCHS_LINUX: aarch64
       CIBW_ARCHS_MACOS: auto
       CIBW_ARCHS_WINDOWS: auto
-      CIBW_BUILD: "cp311-* cp312-* cp313-*"
+      CIBW_BUILD: "cp312-* cp313-*"
 
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +45,7 @@ jobs:
 
   make_sdist:
     name: Make sdist
+    needs: [build-wheels]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
