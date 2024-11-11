@@ -31,11 +31,11 @@ jobs:
           python-version: '3.12'
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
+        uses: pypa/cibuildwheel@v2.19.2
         with:
           package-dir: quickfix-py
         env:
-          CIBW_BEFORE_ALL_LINUX: 'uname -a && ls -la && ./setup-linux-apt.sh'
+          CIBW_BEFORE_ALL_LINUX: 'uname -a && ls -la && ./setup-linux-yum.sh'
 
       - uses: actions/upload-artifact@v4
         with:
