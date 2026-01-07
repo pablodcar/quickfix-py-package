@@ -1,77 +1,78 @@
-name: Build
+name: Build Wheels
 
-on: [push, pull_request]
+on:
+  release:
+    types: [published]
 
 jobs:
-  build-wheels-linux:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  build-wheels:
+    name: Build wheels (${{ matrix.platform.os }} ${{ matrix.platform.arch }} ${{ matrix.python.version }})
+    runs-on: ${{ matrix.platform.os }}
+
     strategy:
+      fail-fast: true
       matrix:
-        python_build: [cp311-manylinux_aarch64]
-        os: [ubuntu-latest]
-    env:
-      CIBW_ARCHS: aarch64
-      CIBW_BUILD: ${{ matrix.python_build }}
+        python:
+          - { version: cp311, setup_version: '3.11'}
+          - { version: cp312, setup_version: '3.12'}
+          - { version: cp313, setup_version: '3.13'}
+          - { version: cp314, setup_version: '3.14'}
+        platform:
+          - { os: ubuntu-24.04,     arch: x86_64,     cibw_system: manylinux }
+          - { os: ubuntu-24.04-arm, arch: aarch64,    cibw_system: manylinux }
+          - { os: macos-15,         arch: arm64,      cibw_system: macosx }
+
+    # Optional: all jobs should pass
+    continue-on-error: true
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v3
+      - name: Checkout quickfix code
+        uses: actions/checkout@v4
         with:
-          platforms: arm64
+          repository: pablodcar/quickfix
+          ref: master
+          path: quickfix
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: workaround for setup-python # setup-python expects a requirments.txt
+        run: |
+          touch requirements.txt
 
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          package-dir: quickfix-py
+          python-version: ${{ matrix.python.setup_version }}
+          cache: pip
+
+      - name: Upgrade pip & build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build setuptools wheel cibuildwheel
+
+      # github actions already includes all dependencies
+
+      - name: Build wheel
+        run: |
+          ./build.sh
         env:
-          CIBW_BEFORE_ALL_LINUX: 'uname -a && ls -la && ./setup-linux-yum.sh'
-          CIBW_BUILD: ${{ matrix.python_build }}
+          TARGET_OS: ${{ runner.os }}
+          CIBW_ARCHS: ${{ matrix.platform.arch == 'amd64' && 'AMD64' || matrix.platform.arch }}
+          CIBW_BUILD: ${{ matrix.python.version }}-${{ matrix.platform.cibw_system }}_${{ matrix.platform.arch }}
+          CIBW_TEST_COMMAND: >
+            python -c "import quickfix"
+          MACOSX_DEPLOYMENT_TARGET: 15.0
+          CIBW_BEFORE_ALL_LINUX: >
+            ./setup-linux-yum.sh
 
       - uses: actions/upload-artifact@v4
+        name: Upload wheels
         with:
-          name: cibw-wheels-${{ matrix.python_build }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl
-
-  build-wheels-osx:
-
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python_build: [cp311-macosx_arm64]
-        os: [macos-14]
-    env:
-      CIBW_ARCHS: 'auto'
-      CIBW_BUILD: ${{ matrix.python_build }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      # Used to host cibuildwheel
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.17.0
-        with:
-          package-dir: quickfix-py
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cibw-wheels-${{ matrix.python_build }}-${{ strategy.job-index }}
-          path: ./wheelhouse/*.whl
+          name: wheel-${{ matrix.python.version }}-${{ matrix.platform.cibw_system }}_${{ matrix.platform.arch }}
+          path: wheelhouse/*.whl
 
   make_sdist:
-
     name: Make sdist
     runs-on: ubuntu-latest
     steps:
@@ -89,23 +90,21 @@ jobs:
         name: cibw-sdist
         path: dist/*.tar.gz
 
-  upload_all:
+  publish:
     name: Publish to PyPI
-    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
-    needs: [build-wheels-linux, build-wheels-osx, make_sdist]
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/quickfix-py
+    needs: [build-wheels, make_sdist]
+
     permissions:
       id-token: write
-    steps:
+      contents: read
 
-      - name: Download distributions
+    steps:
+      - name: Download distribution fiels
         uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
 
-      - name: Publish distribution 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.8.14
