@@ -63,13 +63,13 @@ ldflags = subprocess.getoutput("pkg-config --libs openssl").strip().split()
 extra_link_args = ldflags
 
 if sys.platform == "linux":  # TODO: execute command  to get openssl
-    extra_compile_args.append("-I/usr/include/openssl")
+    extra_compile_args.append("-lssl")
 else:
     extra_compile_args.append("-I/opt/homebrew/opt/openssl@3/include")
 
 setup(
     name="quickfix-py",
-    version="0.0.2",
+    version="0.0.3",
     python_requires=">=3.11",
     py_modules=[
         "quickfix",

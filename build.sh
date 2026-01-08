@@ -1,24 +1,7 @@
 #!/usr/bin/env bash
 WITH_MYSQL=${WITH_MYSQL:-0}
 
-arguments=(--with-python --with-openssl)
-
-# TODO: support building with mysql and postgresql support
-# if [ "$WITH_MYSQL" -eq 1 ]; then
-#     arguments+=(--with-mysql)
-# fi
-
-if [ -d quickfix ]; then
-  echo "quickfix directory already exists."
-  exit
-fi
-
-git clone https://github.com/pablodcar/quickfix
-rm -rf quickfix/.git
-
-# pushd quickfix/doc
-# ./document.sh
-# popd
+arguments=(--with-openssl)
 
 pushd quickfix || exit
 ./bootstrap
@@ -30,3 +13,16 @@ pushd quickfix/src/python || exit
 echo "building Python interface..."
 ./swig.sh
 popd || exit
+
+./package-python.sh
+
+if [[ "$TARGET_OS" == "Linux" ]]; then
+    export CPPFLAGS="-DHAVE_SSL=1"
+elif [[ "$TARGET_OS" == "macOS" ]]; then
+    export CPPFLAGS="-I/opt/homebrew/opt/openssl@3/include -DHAVE_SSL=1"
+else
+  echo "Unknown TARGET_OS: $TARGET_OS" >&2
+  exit 1
+fi
+
+python -m cibuildwheel quickfix-py --output-dir wheelhouse
