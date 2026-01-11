@@ -18,7 +18,7 @@ jobs:
       - name: Download distribution fiels
         uses: actions/download-artifact@v4
         with:
-          pattern: '{sdist,wheel}*'
+          pattern: '{cibw,wheel}*'
           path: dist
           merge-multiple: true
 
