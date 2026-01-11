@@ -25,4 +25,4 @@ else
   exit 1
 fi
 
-python -m cibuildwheel quickfix-py --output-dir wheelhouse
+python -m cibuildwheel quickfix-py --output-dir dist

@@ -74,7 +74,7 @@ jobs:
         name: Upload wheels
         with:
           name: wheel-${{ matrix.python.version }}-${{ matrix.platform.cibw_system }}_${{ matrix.platform.arch }}
-          path: wheelhouse/*.whl
+          path: dist/*.whl
 
   make_sdist:
     name: Make sdist
